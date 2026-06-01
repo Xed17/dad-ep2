@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # INFRAESTRUCTURA (Bases de Datos)
+  # ==========================================
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      # Postgres solo crea 1 BD por defecto, usamos un script para crear las 3
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-dbs.sql:/docker-entrypoint-initdb.d/init-dbs.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservices-net
+
+  # ==========================================
+  # SERVICIOS CORE
+  # ==========================================
+  config-server:
+    build:
+      context: ./ms-chambilla-config-server/ms-chambilla-config-server
+      dockerfile: Dockerfile
+    container_name: config_server
+    ports:
+      - "8888:8888"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  registry-server:
+    build:
+      context: ./ms-chambilla-registry-server/ms-chambilla-registry-server
+      dockerfile: Dockerfile
+    container_name: registry_server
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # MICROSERVICIOS DE NEGOCIO
+  # ==========================================
+  ms-instructor:
+    build:
+      context: ./ms-gestion-instructor/ms-gestion-instructor
+      dockerfile: Dockerfile
+    container_name: ms_instructor
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      registry-server:
+        condition: service_healthy
+      postgres-db:
+        condition: service_started
+    networks:
+      - microservices-net
+
+  ms-alumno:
+    build:
+      context: ./ms-gestion-alumno/ms-gestion-alumno
+      dockerfile: Dockerfile
+    container_name: ms_alumno
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      registry-server:
+        condition: service_healthy
+      postgres-db:
+        condition: service_started
+    networks:
+      - microservices-net
+
+  ms-taller:
+    build:
+      context: ./ms-gestion-taller/ms-gestion-taller
+      dockerfile: Dockerfile
+    container_name: ms_taller
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      registry-server:
+        condition: service_healthy
+      postgres-db:
+        condition: service_started
+    networks:
+      - microservices-net
+
+  # ==========================================
+  # API GATEWAY
+  # ==========================================
+  api-gateway:
+    build:
+      context: ./ms-chambilla-api-gateway/ms-chambilla-api-gateway
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      registry-server:
+        condition: service_healthy
+      ms-instructor:
+        condition: service_started
+      ms-alumno:
+        condition: service_started
+      ms-taller:
+        condition: service_started
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  postgres_data:

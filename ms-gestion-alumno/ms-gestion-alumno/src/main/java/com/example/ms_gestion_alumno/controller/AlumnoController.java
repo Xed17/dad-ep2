@@ -45,6 +45,14 @@ public class AlumnoController {
         return ResponseEntity.ok(service.updateAlumno(id, request));
     }
 
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<Void> updateAlumnoEstado(
+            @PathVariable Long id,
+            @RequestParam String estado) {
+        service.updateAlumnoEstado(id, estado);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlumno(@PathVariable Long id) {
         service.deleteAlumno(id);

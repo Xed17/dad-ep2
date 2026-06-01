@@ -99,6 +99,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 
     @Override
     @Transactional
+    public void updateAlumnoEstado(Long id, String estado) {
+        Alumno alumno = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alumno no encontrado con id: " + id));
+        
+        alumno.setEstado(estado);
+        repository.save(alumno);
+    }
+
+    @Override
+    @Transactional
     public void deleteAlumno(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Alumno no encontrado con id: " + id);

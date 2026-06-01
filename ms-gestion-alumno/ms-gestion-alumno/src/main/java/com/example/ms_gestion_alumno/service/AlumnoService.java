@@ -11,5 +11,6 @@ public interface AlumnoService {
     List<AlumnoResponse> getAllAlumnos();
     List<AlumnoResponse> getAlumnosByInstructor(Long instructorId);
     AlumnoResponse updateAlumno(Long id, AlumnoRequest request);
+    void updateAlumnoEstado(Long id, String estado);
     void deleteAlumno(Long id);
 }

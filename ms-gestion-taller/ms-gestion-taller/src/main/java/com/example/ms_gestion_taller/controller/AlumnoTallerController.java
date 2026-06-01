@@ -19,7 +19,7 @@ public class AlumnoTallerController {
     private final TallerService service;
 
     @GetMapping("/{alumnoId}/talleres")
-    public ResponseEntity<List<InscripcionResponse>> getTalleresDeAlumno(@PathVariable Long alumnoId) {
+    public ResponseEntity<List<InscripcionResponse>> getTalleresDeAlumno(@PathVariable("alumnoId") Long alumnoId) {
         return ResponseEntity.ok(service.getInscripcionesByAlumno(alumnoId));
     }
 }

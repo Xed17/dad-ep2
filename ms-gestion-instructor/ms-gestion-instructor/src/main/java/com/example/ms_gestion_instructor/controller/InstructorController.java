@@ -25,7 +25,7 @@ public class InstructorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<InstructorResponse> getInstructorById(@PathVariable Long id) {
+    public ResponseEntity<InstructorResponse> getInstructorById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(service.getInstructorById(id));
     }
 
@@ -36,13 +36,13 @@ public class InstructorController {
 
     @PutMapping("/{id}")
     public ResponseEntity<InstructorResponse> updateInstructor(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody InstructorUpdateRequest request) {
         return ResponseEntity.ok(service.updateInstructor(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteInstructor(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteInstructor(@PathVariable("id") Long id) {
         service.deleteInstructor(id);
         return ResponseEntity.noContent().build();
     }

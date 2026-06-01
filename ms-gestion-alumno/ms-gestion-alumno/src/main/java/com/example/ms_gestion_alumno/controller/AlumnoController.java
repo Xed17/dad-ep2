@@ -24,7 +24,7 @@ public class AlumnoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AlumnoResponse> getAlumnoById(@PathVariable Long id) {
+    public ResponseEntity<AlumnoResponse> getAlumnoById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(service.getAlumnoById(id));
     }
 
@@ -34,27 +34,27 @@ public class AlumnoController {
     }
 
     @GetMapping("/instructor/{instructorId}")
-    public ResponseEntity<List<AlumnoResponse>> getAlumnosByInstructor(@PathVariable Long instructorId) {
+    public ResponseEntity<List<AlumnoResponse>> getAlumnosByInstructor(@PathVariable("instructorId") Long instructorId) {
         return ResponseEntity.ok(service.getAlumnosByInstructor(instructorId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AlumnoResponse> updateAlumno(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody AlumnoRequest request) {
         return ResponseEntity.ok(service.updateAlumno(id, request));
     }
 
     @PutMapping("/{id}/estado")
     public ResponseEntity<Void> updateAlumnoEstado(
-            @PathVariable Long id,
-            @RequestParam String estado) {
+            @PathVariable("id") Long id,
+            @RequestParam("estado") String estado) {
         service.updateAlumnoEstado(id, estado);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAlumno(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteAlumno(@PathVariable("id") Long id) {
         service.deleteAlumno(id);
         return ResponseEntity.noContent().build();
     }

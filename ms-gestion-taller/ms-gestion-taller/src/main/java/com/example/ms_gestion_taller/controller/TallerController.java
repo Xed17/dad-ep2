@@ -33,19 +33,19 @@ public class TallerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TallerResponse> getTallerById(@PathVariable Long id) {
+    public ResponseEntity<TallerResponse> getTallerById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(service.getTallerById(id));
     }
 
     @GetMapping("/instructor/{instructorId}")
-    public ResponseEntity<List<TallerResponse>> getTalleresByInstructor(@PathVariable Long instructorId) {
+    public ResponseEntity<List<TallerResponse>> getTalleresByInstructor(@PathVariable("instructorId") Long instructorId) {
         return ResponseEntity.ok(service.getTalleresByInstructor(instructorId));
     }
 
     @GetMapping("/fecha")
     public ResponseEntity<List<TallerResponse>> getTalleresByFechaRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam("start") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         return ResponseEntity.ok(service.getTalleresByFechaRange(start, end));
     }
 
@@ -55,13 +55,13 @@ public class TallerController {
     }
 
     @DeleteMapping("/inscripciones/{tallerId}/alumnos/{alumnoId}")
-    public ResponseEntity<Void> cancelarInscripcion(@PathVariable Long tallerId, @PathVariable Long alumnoId) {
+    public ResponseEntity<Void> cancelarInscripcion(@PathVariable("tallerId") Long tallerId, @PathVariable("alumnoId") Long alumnoId) {
         service.cancelarInscripcion(tallerId, alumnoId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{tallerId}/inscripciones")
-    public ResponseEntity<List<InscripcionResponse>> getInscripcionesByTaller(@PathVariable Long tallerId) {
+    public ResponseEntity<List<InscripcionResponse>> getInscripcionesByTaller(@PathVariable("tallerId") Long tallerId) {
         return ResponseEntity.ok(service.getInscripcionesByTaller(tallerId));
     }
 }

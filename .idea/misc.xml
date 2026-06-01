@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/ms-gestion-alumno/ms-gestion-alumno/pom.xml" />
+        <option value="$PROJECT_DIR$/ms-gestion-taller/ms-gestion-taller/pom.xml" />
+        <option value="$PROJECT_DIR$/ms-gestion-instructor/ms-gestion-instructor/pom.xml" />
+        <option value="$PROJECT_DIR$/ms-chambilla-api-gateway/ms-chambilla-api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/ms-chambilla-config-server/ms-chambilla-config-server/pom.xml" />
+        <option value="$PROJECT_DIR$/ms-chambilla-registry-server/ms-chambilla-registry-server/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="21 (2)" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>

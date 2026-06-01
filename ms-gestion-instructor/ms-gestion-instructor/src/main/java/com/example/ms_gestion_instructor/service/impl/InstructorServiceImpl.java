@@ -2,64 +2,84 @@ package com.example.ms_gestion_instructor.service.impl;
 
 import com.example.ms_gestion_instructor.dto.InstructorRequest;
 import com.example.ms_gestion_instructor.dto.InstructorResponse;
+import com.example.ms_gestion_instructor.dto.InstructorUpdateRequest;
+import com.example.ms_gestion_instructor.exception.ResourceNotFoundException;
 import com.example.ms_gestion_instructor.model.Instructor;
 import com.example.ms_gestion_instructor.repository.InstructorRepository;
 import com.example.ms_gestion_instructor.service.InstructorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class InstructorServiceImpl implements InstructorService {
 
     private final InstructorRepository repository;
 
     @Override
-    @Transactional(readOnly = true)
-    public List<InstructorResponse> findAll() {
+    @Transactional
+    public InstructorResponse createInstructor(InstructorRequest request) {
+        if (repository.existsByEmail(request.email())) {
+            throw new DataIntegrityViolationException("El email ya está registrado");
+        }
+
+        Instructor instructor = Instructor.builder()
+                .nombre(request.nombre())
+                .email(request.email())
+                .especialidad(request.especialidad())
+                .build();
+
+        return toResponse(repository.save(instructor));
+    }
+
+    @Override
+    public InstructorResponse getInstructorById(Long id) {
+        return repository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor no encontrado con id: " + id));
+    }
+
+    @Override
+    public List<InstructorResponse> getAllInstructors() {
         return repository.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public InstructorResponse findById(Long id) {
-        return repository.findById(id)
-                .map(this::toResponse)
-                .orElseThrow(() -> new RuntimeException("Instructor no encontrado con id: " + id));
-    }
-
-    @Override
-    public InstructorResponse save(InstructorRequest request) {
-        Instructor instructor = new Instructor();
-        instructor.setNombre(request.nombre());
-        instructor.setApellido(request.apellido());
-        instructor.setEspecialidad(request.especialidad());
-        instructor.setEmail(request.email());
-        return toResponse(repository.save(instructor));
-    }
-
-    @Override
-    public InstructorResponse update(Long id, InstructorRequest request) {
+    @Transactional
+    public InstructorResponse updateInstructor(Long id, InstructorUpdateRequest request) {
         Instructor instructor = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Instructor no encontrado con id: " + id));
-        instructor.setNombre(request.nombre());
-        instructor.setApellido(request.apellido());
-        instructor.setEspecialidad(request.especialidad());
-        instructor.setEmail(request.email());
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor no encontrado con id: " + id));
+
+        if (request.nombre() != null) {
+            instructor.setNombre(request.nombre());
+        }
+        if (request.email() != null && !request.email().equals(instructor.getEmail())) {
+            if (repository.existsByEmail(request.email())) {
+                throw new DataIntegrityViolationException("El email ya está registrado");
+            }
+            instructor.setEmail(request.email());
+        }
+        if (request.especialidad() != null) {
+            instructor.setEspecialidad(request.especialidad());
+        }
+
         return toResponse(repository.save(instructor));
     }
 
     @Override
-    public void delete(Long id) {
+    @Transactional
+    public void deleteInstructor(Long id) {
         if (!repository.existsById(id)) {
-            throw new RuntimeException("Instructor no encontrado con id: " + id);
+            throw new ResourceNotFoundException("Instructor no encontrado con id: " + id);
         }
         repository.deleteById(id);
     }
@@ -68,9 +88,9 @@ public class InstructorServiceImpl implements InstructorService {
         return new InstructorResponse(
                 instructor.getId(),
                 instructor.getNombre(),
-                instructor.getApellido(),
+                instructor.getEmail(),
                 instructor.getEspecialidad(),
-                instructor.getEmail()
+                instructor.getFechaCreacion()
         );
     }
 }

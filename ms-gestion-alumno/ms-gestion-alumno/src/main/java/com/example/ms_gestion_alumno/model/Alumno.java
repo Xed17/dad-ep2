@@ -1,17 +1,17 @@
 package com.example.ms_gestion_alumno.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "alumnos")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Alumno {
@@ -20,20 +20,28 @@ public class Alumno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false)
     private String nombre;
 
-    @NotBlank
-    @Column(nullable = false)
-    private String apellido;
-
-    @NotBlank
-    @Column(nullable = false, unique = true)
-    private String dni;
-
-    @Email
-    @NotBlank
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(name = "fecha_inscripcion")
+    private LocalDateTime fechaInscripcion;
+
+    @Column(nullable = false)
+    private String estado;
+
+    @Column(name = "instructor_id")
+    private Long instructorId;
+
+    @PrePersist
+    protected void onCreate() {
+        if (fechaInscripcion == null) {
+            fechaInscripcion = LocalDateTime.now();
+        }
+        if (estado == null) {
+            estado = "ACTIVO";
+        }
+    }
 }

@@ -1,5 +1,40 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: ms-chambilla-api-gateway
   config:
     import: configserver:http://localhost:8888
+  cloud:
+    gateway:
+      mvc:
+        routes:
+          - id: ms-gestion-instructor-route
+            uri: lb://ms-gestion-instructor
+            predicates:
+              - Path=/api/instructores/**
+          - id: ms-gestion-alumno-route
+            uri: lb://ms-gestion-alumno
+            predicates:
+              - Path=/api/alumnos/**
+          - id: ms-gestion-taller-route
+            uri: lb://ms-gestion-taller
+            predicates:
+              - Path=/api/talleres/**
+            filters:
+              - StripPrefix=1
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: gateway,health,info,refresh
+  endpoint:
+    health:
+      show-details: always

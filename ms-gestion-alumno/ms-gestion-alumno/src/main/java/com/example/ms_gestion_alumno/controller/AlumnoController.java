@@ -12,37 +12,42 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/alumnos")
+@RequestMapping("/api/alumnos")
 @RequiredArgsConstructor
 public class AlumnoController {
 
     private final AlumnoService service;
 
-    @GetMapping
-    public ResponseEntity<List<AlumnoResponse>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    @PostMapping
+    public ResponseEntity<AlumnoResponse> createAlumno(@Valid @RequestBody AlumnoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.createAlumno(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AlumnoResponse> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    public ResponseEntity<AlumnoResponse> getAlumnoById(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getAlumnoById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<AlumnoResponse> save(@Valid @RequestBody AlumnoRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(request));
+    @GetMapping
+    public ResponseEntity<List<AlumnoResponse>> getAllAlumnos() {
+        return ResponseEntity.ok(service.getAllAlumnos());
+    }
+
+    @GetMapping("/instructor/{instructorId}")
+    public ResponseEntity<List<AlumnoResponse>> getAlumnosByInstructor(@PathVariable Long instructorId) {
+        return ResponseEntity.ok(service.getAlumnosByInstructor(instructorId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AlumnoResponse> update(
+    public ResponseEntity<AlumnoResponse> updateAlumno(
             @PathVariable Long id,
             @Valid @RequestBody AlumnoRequest request) {
-        return ResponseEntity.ok(service.update(id, request));
+        return ResponseEntity.ok(service.updateAlumno(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> deleteAlumno(@PathVariable Long id) {
+        service.deleteAlumno(id);
         return ResponseEntity.noContent().build();
     }
 }

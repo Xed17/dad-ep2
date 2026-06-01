@@ -1,17 +1,17 @@
 package com.example.ms_gestion_taller.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "talleres")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Taller {
@@ -20,17 +20,27 @@ public class Taller {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false)
     private String nombre;
 
-    @Column
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    @Positive
-    @Column(nullable = false)
-    private Integer capacidad;
+    @Column(name = "fecha_inicio", nullable = false)
+    private LocalDateTime fechaInicio;
 
-    @Column(nullable = false)
+    @Column(name = "fecha_fin", nullable = false)
+    private LocalDateTime fechaFin;
+
+    @Column(name = "cupo_maximo", nullable = false)
+    private Integer cupoMaximo;
+
+    @Column(name = "cupo_disponible", nullable = false)
+    private Integer cupoDisponible;
+
+    @Column(name = "instructor_id", nullable = false)
     private Long instructorId;
+
+    @Version
+    private Long version;
 }

@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "ms-gestion-instructor")
 public interface InstructorClient {
 
-    @GetMapping("/instructores/{id}")
-    InstructorDTO findById(@PathVariable Long id);
+    @GetMapping("/api/instructores/{id}")
+    InstructorDTO getInstructorById(@PathVariable("id") Long id);
 }

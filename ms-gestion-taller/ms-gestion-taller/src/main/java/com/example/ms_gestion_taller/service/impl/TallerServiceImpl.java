@@ -1,126 +1,201 @@
 package com.example.ms_gestion_taller.service.impl;
 
-import com.example.ms_gestion_taller.client.InstructorClient;
-import com.example.ms_gestion_taller.dto.InstructorDTO;
-import com.example.ms_gestion_taller.dto.TallerRequest;
-import com.example.ms_gestion_taller.dto.TallerResponse;
+import com.example.ms_gestion_taller.client.AlumnoClientFacade;
+import com.example.ms_gestion_taller.client.InstructorClientFacade;
+import com.example.ms_gestion_taller.dto.*;
+import com.example.ms_gestion_taller.exception.ResourceNotFoundException;
 import com.example.ms_gestion_taller.model.Taller;
+import com.example.ms_gestion_taller.model.TallerAlumno;
+import com.example.ms_gestion_taller.repository.TallerAlumnoRepository;
 import com.example.ms_gestion_taller.repository.TallerRepository;
 import com.example.ms_gestion_taller.service.TallerService;
-import feign.FeignException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class TallerServiceImpl implements TallerService {
 
-    private final TallerRepository repository;
-    private final InstructorClient instructorClient;
+    private final TallerRepository tallerRepository;
+    private final TallerAlumnoRepository tallerAlumnoRepository;
+    private final InstructorClientFacade instructorClientFacade;
+    private final AlumnoClientFacade alumnoClientFacade;
 
     @Override
-    @Transactional(readOnly = true)
-    public List<TallerResponse> findAll() {
-        return repository.findAll().stream()
-                .map(taller -> toResponse(taller, obtenerInstructor(taller.getInstructorId())))
+    @Transactional
+    public TallerResponse createTaller(TallerRequest request) {
+        if (request.fechaInicio().isAfter(request.fechaFin()) || request.fechaInicio().isEqual(request.fechaFin())) {
+            throw new IllegalArgumentException("La fecha de inicio debe ser anterior a la fecha de fin");
+        }
+
+        InstructorDTO instructor = instructorClientFacade.getInstructorById(request.instructorId());
+        if (instructor == null || instructor.id() == null) {
+            throw new ResourceNotFoundException("Instructor no encontrado con id: " + request.instructorId());
+        }
+
+        Taller taller = Taller.builder()
+                .nombre(request.nombre())
+                .descripcion(request.descripcion())
+                .fechaInicio(request.fechaInicio())
+                .fechaFin(request.fechaFin())
+                .cupoMaximo(request.cupoMaximo())
+                .cupoDisponible(request.cupoMaximo())
+                .instructorId(request.instructorId())
+                .build();
+
+        Taller saved = tallerRepository.save(taller);
+        return toTallerResponse(saved, instructor.nombre());
+    }
+
+    @Override
+    public List<TallerResponse> getAllTalleres() {
+        return tallerRepository.findAll().stream()
+                .map(t -> toTallerResponse(t, "Información básica"))
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public TallerResponse findById(Long id) {
-        Taller taller = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Taller no encontrado con id: " + id));
-        return toResponse(taller, obtenerInstructor(taller.getInstructorId()));
+    public TallerResponse getTallerById(Long id) {
+        Taller taller = tallerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Taller no encontrado con id: " + id));
+
+        InstructorDTO instructor = instructorClientFacade.getInstructorById(taller.getInstructorId());
+        String nombreInstructor = (instructor != null && instructor.id() != null)
+                ? instructor.nombre()
+                : "Instructor no disponible";
+
+        return toTallerResponse(taller, nombreInstructor);
     }
 
     @Override
-    @CircuitBreaker(name = "instructor-cb", fallbackMethod = "saveFallback")
-    public TallerResponse save(TallerRequest request) {
-        // Verifica que el instructor exista antes de guardar
-        try {
-            instructorClient.findById(request.instructorId());
-        } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Instructor con id " + request.instructorId() + " no existe");
-        }
-
-        Taller taller = new Taller();
-        taller.setNombre(request.nombre());
-        taller.setDescripcion(request.descripcion());
-        taller.setCapacidad(request.capacidad());
-        taller.setInstructorId(request.instructorId());
-        Taller saved = repository.save(taller);
-        return toResponse(saved, obtenerInstructor(saved.getInstructorId()));
+    public List<TallerResponse> getTalleresByInstructor(Long instructorId) {
+        return tallerRepository.findByInstructorId(instructorId).stream()
+                .map(t -> toTallerResponse(t, "Información básica"))
+                .collect(Collectors.toList());
     }
 
     @Override
-    @CircuitBreaker(name = "instructor-cb", fallbackMethod = "updateFallback")
-    public TallerResponse update(Long id, TallerRequest request) {
-        Taller taller = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Taller no encontrado con id: " + id));
-        // Verifica que el instructor exista
-        try {
-            instructorClient.findById(request.instructorId());
-        } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Instructor con id " + request.instructorId() + " no existe");
-        }
-        taller.setNombre(request.nombre());
-        taller.setDescripcion(request.descripcion());
-        taller.setCapacidad(request.capacidad());
-        taller.setInstructorId(request.instructorId());
-        return toResponse(repository.save(taller), obtenerInstructor(taller.getInstructorId()));
+    public List<TallerResponse> getTalleresByFechaRange(LocalDateTime start, LocalDateTime end) {
+        return tallerRepository.findByFechaInicioBetween(start, end).stream()
+                .map(t -> toTallerResponse(t, "Información básica"))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new RuntimeException("Taller no encontrado con id: " + id);
+    @Transactional
+    public InscripcionResponse inscribirAlumno(InscripcionRequest request) {
+        Taller taller = tallerRepository.findById(request.tallerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Taller no encontrado con id: " + request.tallerId()));
+
+        if (taller.getCupoDisponible() <= 0) {
+            throw new IllegalArgumentException("No hay cupos disponibles para el taller seleccionado");
         }
-        repository.deleteById(id);
-    }
 
-    // ---------- Circuit Breaker Fallbacks ----------
-
-    public TallerResponse saveFallback(TallerRequest request, Throwable t) {
-        log.error("Circuit breaker activado al crear taller. Instructor service caído: {}", t.getMessage());
-        throw new RuntimeException("El servicio de instructores no está disponible. Intente más tarde.");
-    }
-
-    public TallerResponse updateFallback(Long id, TallerRequest request, Throwable t) {
-        log.error("Circuit breaker activado al actualizar taller. Instructor service caído: {}", t.getMessage());
-        throw new RuntimeException("El servicio de instructores no está disponible. Intente más tarde.");
-    }
-
-    // ---------- Helper Methods ----------
-
-    private InstructorDTO obtenerInstructor(Long instructorId) {
-        try {
-            return instructorClient.findById(instructorId);
-        } catch (Exception e) {
-            log.warn("No se pudo obtener datos del instructor {}: {}", instructorId, e.getMessage());
-            return null;
+        AlumnoDTO alumno = alumnoClientFacade.getAlumnoById(request.alumnoId());
+        if (alumno == null || alumno.id() == null) {
+            throw new ResourceNotFoundException("Alumno no encontrado con id: " + request.alumnoId());
         }
+
+        tallerAlumnoRepository.findByTallerIdAndAlumnoId(request.tallerId(), request.alumnoId())
+                .ifPresent(ta -> {
+                    if ("INSCRITO".equals(ta.getEstado())) {
+                        throw new DataIntegrityViolationException("El alumno ya está inscrito en este taller");
+                    }
+                });
+
+        TallerAlumno inscripcion = TallerAlumno.builder()
+                .tallerId(request.tallerId())
+                .alumnoId(request.alumnoId())
+                .build();
+
+        // Optimistic Locking activo via @Version en Taller
+        taller.setCupoDisponible(taller.getCupoDisponible() - 1);
+        tallerRepository.save(taller);
+
+        TallerAlumno saved = tallerAlumnoRepository.save(inscripcion);
+
+        return new InscripcionResponse(
+                saved.getId(),
+                saved.getAlumnoId(),
+                alumno.nombre(),
+                saved.getTallerId(),
+                taller.getNombre(),
+                saved.getFechaInscripcion(),
+                saved.getEstado()
+        );
     }
 
-    private TallerResponse toResponse(Taller taller, InstructorDTO instructor) {
-        String nombre = instructor != null ? instructor.nombre() : "N/A";
-        String apellido = instructor != null ? instructor.apellido() : "N/A";
+    @Override
+    @Transactional
+    public void cancelarInscripcion(Long tallerId, Long alumnoId) {
+        TallerAlumno inscripcion = tallerAlumnoRepository.findByTallerIdAndAlumnoId(tallerId, alumnoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inscripción no encontrada para tallerId=" + tallerId + " alumnoId=" + alumnoId));
+
+        if ("CANCELADO".equals(inscripcion.getEstado())) {
+            throw new IllegalArgumentException("La inscripción ya se encuentra cancelada");
+        }
+
+        inscripcion.setEstado("CANCELADO");
+        tallerAlumnoRepository.save(inscripcion);
+
+        Taller taller = tallerRepository.findById(tallerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Taller no encontrado con id: " + tallerId));
+
+        taller.setCupoDisponible(taller.getCupoDisponible() + 1);
+        tallerRepository.save(taller);
+    }
+
+    @Override
+    public List<InscripcionResponse> getInscripcionesByTaller(Long tallerId) {
+        Taller taller = tallerRepository.findById(tallerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Taller no encontrado con id: " + tallerId));
+
+        return tallerAlumnoRepository.findByTallerId(tallerId).stream()
+                .map(insc -> new InscripcionResponse(
+                        insc.getId(),
+                        insc.getAlumnoId(),
+                        "N/A",
+                        insc.getTallerId(),
+                        taller.getNombre(),
+                        insc.getFechaInscripcion(),
+                        insc.getEstado()
+                )).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<InscripcionResponse> getInscripcionesByAlumno(Long alumnoId) {
+        return tallerAlumnoRepository.findByAlumnoId(alumnoId).stream()
+                .map(insc -> new InscripcionResponse(
+                        insc.getId(),
+                        insc.getAlumnoId(),
+                        "N/A",
+                        insc.getTallerId(),
+                        "N/A",
+                        insc.getFechaInscripcion(),
+                        insc.getEstado()
+                )).collect(Collectors.toList());
+    }
+
+    private TallerResponse toTallerResponse(Taller taller, String nombreInstructor) {
         return new TallerResponse(
                 taller.getId(),
                 taller.getNombre(),
                 taller.getDescripcion(),
-                taller.getCapacidad(),
+                taller.getFechaInicio(),
+                taller.getFechaFin(),
+                taller.getCupoMaximo(),
+                taller.getCupoDisponible(),
                 taller.getInstructorId(),
-                nombre,
-                apellido
+                nombreInstructor
         );
     }
 }

@@ -1,8 +1,8 @@
 package com.example.ms_gestion_taller.dto;
 
-public record InstructorDTO(
+public record AlumnoDTO(
         Long id,
         String nombre,
         String email,
-        String especialidad
+        String estado
 ) {}

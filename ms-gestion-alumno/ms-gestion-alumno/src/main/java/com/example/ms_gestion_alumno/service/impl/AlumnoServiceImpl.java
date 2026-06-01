@@ -1,6 +1,6 @@
 package com.example.ms_gestion_alumno.service.impl;
 
-import com.example.ms_gestion_alumno.client.InstructorClient;
+import com.example.ms_gestion_alumno.client.InstructorClientFacade;
 import com.example.ms_gestion_alumno.dto.AlumnoRequest;
 import com.example.ms_gestion_alumno.dto.AlumnoResponse;
 import com.example.ms_gestion_alumno.dto.InstructorDTO;
@@ -8,8 +8,6 @@ import com.example.ms_gestion_alumno.exception.ResourceNotFoundException;
 import com.example.ms_gestion_alumno.model.Alumno;
 import com.example.ms_gestion_alumno.repository.AlumnoRepository;
 import com.example.ms_gestion_alumno.service.AlumnoService;
-import feign.FeignException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -26,7 +24,7 @@ import java.util.stream.Collectors;
 public class AlumnoServiceImpl implements AlumnoService {
 
     private final AlumnoRepository repository;
-    private final InstructorClient instructorClient;
+    private final InstructorClientFacade instructorClientFacade;
 
     @Override
     @Transactional
@@ -35,8 +33,7 @@ public class AlumnoServiceImpl implements AlumnoService {
             throw new DataIntegrityViolationException("El email ya está registrado");
         }
 
-        // Verifica que el instructor exista
-        InstructorDTO instructor = getInstructorFallbackAware(request.instructorId());
+        InstructorDTO instructor = instructorClientFacade.getInstructorById(request.instructorId());
         if (instructor == null || instructor.id() == null) {
             throw new ResourceNotFoundException("Instructor no encontrado con id: " + request.instructorId());
         }
@@ -55,10 +52,12 @@ public class AlumnoServiceImpl implements AlumnoService {
     public AlumnoResponse getAlumnoById(Long id) {
         Alumno alumno = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alumno no encontrado con id: " + id));
-        
-        InstructorDTO instructor = getInstructorFallbackAware(alumno.getInstructorId());
-        String nombreInstructor = (instructor != null) ? instructor.nombre() : "Instructor no disponible";
-        
+
+        InstructorDTO instructor = instructorClientFacade.getInstructorById(alumno.getInstructorId());
+        String nombreInstructor = (instructor != null && instructor.id() != null)
+                ? instructor.nombre()
+                : "Instructor no disponible";
+
         return toResponse(alumno, nombreInstructor);
     }
 
@@ -86,7 +85,7 @@ public class AlumnoServiceImpl implements AlumnoService {
             throw new DataIntegrityViolationException("El email ya está registrado");
         }
 
-        InstructorDTO instructor = getInstructorFallbackAware(request.instructorId());
+        InstructorDTO instructor = instructorClientFacade.getInstructorById(request.instructorId());
         if (instructor == null || instructor.id() == null) {
             throw new ResourceNotFoundException("Instructor no encontrado con id: " + request.instructorId());
         }
@@ -105,20 +104,6 @@ public class AlumnoServiceImpl implements AlumnoService {
             throw new ResourceNotFoundException("Alumno no encontrado con id: " + id);
         }
         repository.deleteById(id);
-    }
-
-    @CircuitBreaker(name = "instructor-cb", fallbackMethod = "instructorFallback")
-    private InstructorDTO getInstructorFallbackAware(Long instructorId) {
-        try {
-            return instructorClient.getInstructorById(instructorId);
-        } catch (FeignException.NotFound e) {
-            return null; // Si devuelve 404, retornamos null para lanzar ResourceNotFoundException
-        }
-    }
-
-    private InstructorDTO instructorFallback(Long instructorId, Throwable t) {
-        log.error("Error al comunicarse con Instructor Service: {}", t.getMessage());
-        return new InstructorDTO(instructorId, "Instructor no disponible", null, null);
     }
 
     private AlumnoResponse toResponse(Alumno alumno, String nombreInstructor) {

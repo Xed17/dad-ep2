@@ -6,24 +6,24 @@ spring:
     gateway:
       mvc:
         routes:
-          - id: instructor-route
+          - id: ms-gestion-instructor-route
             uri: lb://ms-gestion-instructor
             predicates:
-              - Path=/instructores/**
+              - Path=/api/instructores/**
 
-          - id: alumno-route
+          - id: ms-gestion-alumno-route
             uri: lb://ms-gestion-alumno
             predicates:
-              - Path=/alumnos/**
+              - Path=/api/alumnos/**
 
-          - id: taller-route
+          - id: ms-gestion-taller-route
             uri: lb://ms-gestion-taller
             predicates:
-              - Path=/talleres/**
+              - Path=/api/talleres/**,/api/alumnos/*/talleres
 
 eureka:
   client:
-    service-url:
+    serviceUrl:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true

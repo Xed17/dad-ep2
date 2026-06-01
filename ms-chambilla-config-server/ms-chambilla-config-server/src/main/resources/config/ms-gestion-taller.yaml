@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/bd_taller
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -16,13 +16,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
-
 resilience4j:
   circuitbreaker:
     instances:
@@ -33,6 +26,20 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 2
         wait-duration-in-open-state: 10s
         failure-rate-threshold: 50
+      alumno-cb:
+        register-health-indicator: true
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        permitted-number-of-calls-in-half-open-state: 2
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
 
 logging:
   level:

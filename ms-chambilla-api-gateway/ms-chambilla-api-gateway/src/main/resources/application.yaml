@@ -5,7 +5,7 @@ spring:
   application:
     name: ms-chambilla-api-gateway
   config:
-    import: configserver:http://localhost:8888
+    import: optional:configserver:http://localhost:8888
   cloud:
     gateway:
       mvc:
@@ -21,9 +21,7 @@ spring:
           - id: ms-gestion-taller-route
             uri: lb://ms-gestion-taller
             predicates:
-              - Path=/api/talleres/**
-            filters:
-              - StripPrefix=1
+              - Path=/api/talleres/**,/api/alumnos/*/talleres
 
 eureka:
   client:

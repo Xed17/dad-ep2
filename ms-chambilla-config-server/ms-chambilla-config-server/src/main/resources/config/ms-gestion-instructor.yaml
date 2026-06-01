@@ -26,3 +26,9 @@ eureka:
 logging:
   level:
     com.example: DEBUG
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
